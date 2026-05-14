@@ -1,11 +1,11 @@
 """Model configuration and Gemini API wrapper."""
 
+from typing import Any
+
 from google import genai
 from google.genai.types import (
-    Content,
     FunctionDeclaration,
     GenerateContentConfig,
-    Part,
     Tool,
 )
 
@@ -89,7 +89,7 @@ TOOLS = [
 CONFIG = GenerateContentConfig(tools=TOOLS)
 
 
-def generate_content(contents, config):
+def generate_content(contents: list, config: GenerateContentConfig) -> Any:
     """Thin wrapper around client.models.generate_content."""
     return client.models.generate_content(
         model=MODEL,
