@@ -1,0 +1,57 @@
+sequenceDiagram
+    actor User
+    participant Main
+    participant Parse
+    participant VertexAI
+    participant Handler
+    participant Tools
+
+    Main->>Main: Initialize Client and Tools
+    
+    loop Chat Loop
+        User->>Main: User Input
+        
+        alt Input is quit or EOF
+            Main->>User: Exit
+        else Valid Input
+            Main->>Parse: parse_input
+            
+            alt Starts with video prefix
+                Parse->>Tools: Read video file
+                Tools-->>Parse: bytes
+                Parse-->>Main: Return Part video
+            else Starts with PDF prefix
+                Parse->>Tools: Read PDF file
+                Tools-->>Parse: bytes
+                Parse-->>Main: Return Part PDF
+            else Text input
+                Parse-->>Main: Return Part text
+            end
+            
+            Main->>Main: Append user content to history
+            Main->>VertexAI: generate_content
+            VertexAI-->>Main: Response
+            
+            Main->>Handler: handle_tool_calls
+            
+            loop Tool Resolution
+                alt Has function calls
+                    Handler->>Handler: Append tool-calls to history
+                    
+                    loop For each function call
+                        Handler->>Tools: Execute tool
+                        Tools-->>Handler: Return result string
+                    end
+                    
+                    Handler->>Handler: Append results to history
+                    Handler->>VertexAI: generate_content
+                    VertexAI-->>Handler: New Response
+                else No function calls
+                    Handler-->>Main: Return final text
+                end
+            end
+            
+            Main->>Main: Append assistant text to history
+            Main->>User: Print response
+        end
+    end

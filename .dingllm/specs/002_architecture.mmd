@@ -1,0 +1,48 @@
+graph TD
+    classDef script fill:#e3f2fd,stroke:#1565c0,stroke-width:2px;
+    classDef tools fill:#e8f5e9,stroke:#2e7d32,stroke-width:2px;
+    classDef model fill:#f3e5f5,stroke:#7b1fa2,stroke-width:2px;
+
+    subgraph ScriptCore [main.py]
+        main([main]):::script
+        parse([parse_input]):::script
+        handle([handle_tool_calls]):::script
+    end
+    style ScriptCore fill:#e3f2fd,stroke:#1565c0,stroke-width:2px,stroke-dasharray: 5 5
+
+    subgraph ToolImpls [tools.py]
+        py_list[list_files]:::tools
+        py_read[read_file]:::tools
+        py_search[search_replace]:::tools
+    end
+    style ToolImpls fill:#e8f5e9,stroke:#2e7d32,stroke-width:2px,stroke-dasharray: 5 5
+
+    subgraph ModelZone [llm.py]
+        generate[generate_content]:::model
+        
+        subgraph DeclaredTools [Tools declared via TOOLS schema]
+            llm_list[[list_files]]:::model
+            llm_read[[read_file]]:::model
+            llm_search[[search_replace]]:::model
+        end
+        style DeclaredTools fill:#f3e5f5,stroke:#7b1fa2,stroke-width:2px,stroke-dasharray: 5 5
+    end
+    style ModelZone fill:#f3e5f5,stroke:#7b1fa2,stroke-width:2px,stroke-dasharray: 5 5
+
+    main --> parse
+    main --> handle
+    
+    main --> generate
+    handle --> generate
+    
+    generate -.-> llm_list
+    generate -.-> llm_read
+    generate -.-> llm_search
+
+    llm_list -.-> py_list
+    llm_read -.-> py_read
+    llm_search -.-> py_search
+
+    handle --> py_list
+    handle --> py_read
+    handle --> py_search

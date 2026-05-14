@@ -1,0 +1,26 @@
+classDiagram
+    class GeminiTools {
+        <<Local Python Implementations>>
+        +list_files(path: str) str
+        +read_file(path: str) str
+        +search_replace(path: str, old_string: str, new_string: str, create_if_missing: bool) str
+    }
+    
+    class ScriptCore {
+        <<Main Application Logic>>
+        +parse_input(raw: str) list~Part~
+        +handle_tool_calls(response, history: list~Content~) str
+        +main() None
+    }
+
+    class ModelDeclaredTools {
+        <<JSON Schema mapped to Gemini>>
+        +list_files(path: string)
+        +read_file(path: string)
+        +search_replace(path: string, old_string: string, new_string: string, create_if_missing: boolean)
+    }
+
+    %% Relationships showing how the components interact
+    ScriptCore ..> GeminiTools : executes via TOOL_FUNCTIONS
+    ScriptCore ..> ModelDeclaredTools : configures model with TOOLS
+    ModelDeclaredTools ..> GeminiTools : 1-to-1 Mapping
