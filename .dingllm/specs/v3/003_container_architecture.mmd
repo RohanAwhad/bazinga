@@ -8,13 +8,10 @@ graph TD
         WEB[Web UI]
         SERVER[Bazinga Local Server]
         IMPL[Implementation Agent]
-        STATE[(State Store)]
+        STATE[(State Store<br/><i>TinyDB</i>)]
     end
 
-    subgraph PROJECT["Target Project Workspace"]
-        REPO[Project Files]
-        ARTIFACTS[(Project Artifacts)]
-    end
+    REPO[(Target Project<br/><i>Filesystem</i>)]
 
     subgraph EXT["External Services"]
         LLM[LLM Provider]
@@ -25,10 +22,10 @@ graph TD
     WEB -->|Chat, artifacts, approvals; WebSocket| SERVER
     SERVER -->|Streams responses, diagram state; WebSocket| WEB
     SERVER -->|Persists sessions and approvals| STATE
-    SERVER -->|Reads repo context| REPO
-    SERVER -->|Writes diagrams, PRDs, roadmap| ARTIFACTS
+    SERVER -->|Reads repo context, writes diagrams/PRDs/roadmap| REPO
     SERVER -->|Chat, diagram, PRD generation; HTTPS| LLM
     SERVER -->|Dispatches approved PRD| IMPL
     IMPL -->|Spawns worktree, runs OpenCode| REPO
+
     IMPL -->|Reports implementation status| SERVER
     IMPL -.->|Creates PRs, reads checks; HTTPS| GITHUB

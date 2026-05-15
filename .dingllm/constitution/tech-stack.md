@@ -14,6 +14,7 @@
 | Package | Purpose |
 |---------|---------|
 | `google-genai` | Vertex AI / Gemini SDK (`google.genai`) |
+| `tinydb` | State store for sessions, approvals, artifact links |
 | stdlib `pathlib` | File system operations for tools |
 
 ## Services
@@ -22,6 +23,15 @@
 |---------|---------|
 | Google Vertex AI | Model backend, project: `redhat-ai-analysis`, location: `global` |
 | Model | `gemini-3.1-pro-preview` |
+
+## Local Development
+
+| Component | Value |
+|-----------|-------|
+| Container runtime | Podman |
+| Orchestration | Podman Compose |
+| Service mapping | Each container from 003 runs as a separate Compose service (Web UI, Local Server, Implementation Agent, State Store) |
+| Target project | Mounted as a volume from the host filesystem |
 
 ## Target Stack
 
