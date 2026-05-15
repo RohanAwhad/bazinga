@@ -1,0 +1,34 @@
+---
+title: Bazinga MVP - Context Use Cases
+---
+graph LR
+
+    DEV([Developer<br/>Person<br/>Uses Bazinga to plan and approve agent-built software])
+
+    subgraph MVP["Bazinga MVP Use Cases"]
+        UC1([Brainstorm Feature<br/>Capture intent through sidebar chat])
+        UC2([Generate And Render Diagram<br/>Create visual context, container, component, or sequence diagrams])
+        UC3([Revise Diagram<br/>Apply developer feedback to Mermaid diagrams])
+        UC4([Approve Diagram<br/>Mark a diagram as implementation intent])
+        UC5([Generate PRD<br/>Turn approved intent into behavior, acceptance criteria, and test expectations])
+        UC6([Track Roadmap Item<br/>Link approved diagram and PRD to planned work])
+    end
+
+    subgraph EXT["Supporting Systems"]
+        LLM[LLM Provider<br/>External System<br/>Generates and revises structured artifacts]
+        PROJECT[Target Project Workspace<br/>External System<br/>Stores diagrams, PRDs, roadmap, and repo context]
+    end
+
+    DEV -->|Explains desired capability| UC1
+    DEV -->|Requests visual architecture| UC2
+    DEV -->|Asks for changes| UC3
+    DEV -->|Accepts design boundary| UC4
+    DEV -->|Requests implementation spec| UC5
+    DEV -->|Plans build sequence| UC6
+
+    UC1 -->|Needs reasoning and synthesis| LLM
+    UC2 -->|Needs diagram generation| LLM
+    UC3 -->|Needs structured revision| LLM
+    UC4 -->|Persists approved artifact| PROJECT
+    UC5 -->|Writes PRD artifact| PROJECT
+    UC6 -->|Updates roadmap artifact| PROJECT

@@ -1,0 +1,19 @@
+---
+title: Bazinga MVP - Context Architecture
+---
+graph TD
+
+    DEV([Developer<br/>Person<br/>Designs, reviews, and approves software work with agents])
+
+    subgraph BZ["Bazinga MVP<br/>Software System<br/>Visual agent workspace for diagram-first software planning"]
+        BAZINGA[Bazinga<br/>Software System<br/>Turns developer intent into rendered diagrams, approvals, and PRDs]
+    end
+
+    subgraph EXT["External Systems"]
+        LLM[LLM Provider<br/>External System<br/>Understands prompts, project context, and diagram requests]
+        PROJECT[Target Project Workspace<br/>External System<br/>Source repo, specs, PRDs, roadmap, and project artifacts]
+    end
+
+    DEV -->|Brainstorms features, reviews rendered diagrams, approves intent| BAZINGA
+    BAZINGA -->|Requests reasoning, drafting, and diagram updates| LLM
+    BAZINGA -->|Reads context and writes approved specs or PRDs| PROJECT
