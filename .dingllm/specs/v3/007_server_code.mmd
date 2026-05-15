@@ -1,0 +1,60 @@
+---
+title: Bazinga Local Server - Chat Code Level
+---
+classDiagram
+    class Content {
+        <<google-genai>>
+    }
+    class Tool {
+        <<google-genai>>
+    }
+    class GenerateContentConfig {
+        <<google-genai>>
+    }
+    class Response {
+        <<google-genai>>
+    }
+
+    class ChatAPI {
+        +chat(project_path: str, session_id: str, message: str) str
+        +create_session(project_path: str) str
+    }
+
+    class ModelClient {
+        -MODEL: str
+        -TOOLS: list~Tool~
+        -CONFIG: GenerateContentConfig
+        +generate_content(contents: list~Content~, config: GenerateContentConfig, project_path: str) Response
+    }
+
+    class ToolExecutor {
+        -TOOL_FUNCTIONS: dict~str, callable~
+        +handle_tool_calls(response: Response, history: list~Content~, project_path: str) str
+        +list_files(path: str) str
+        +read_file(path: str) str
+        +search_replace(path: str, old_string: str, new_string: str, create_if_missing: bool) str
+    }
+
+    class ArtifactPersistence {
+        +save_artifact(project_path: str, rel_path: str, content: str) str
+    }
+
+    class StateStore {
+        +save_session(project_path: str, session_id: str, history: list~Content~)
+        +load_session(project_path: str, session_id: str) list~Content~
+    }
+
+    ModelClient ..> Content : uses
+    ModelClient ..> Tool : declares
+    ModelClient ..> GenerateContentConfig : configures
+    ModelClient ..> Response : returns
+    StateStore ..> Content : stores
+    ToolExecutor ..> Response : reads
+    ToolExecutor ..> Content : appends to history
+
+    ChatAPI --> StateStore : saves/loads session history
+    ChatAPI --> ModelClient : sends history + message + project_path
+    ModelClient --> ToolExecutor : dispatches tool calls
+    ToolExecutor --> ModelClient : returns tool results
+    ToolExecutor --> ArtifactPersistence : saves diagrams/specs
+    ArtifactPersistence --> StateStore : updates artifact links

@@ -1,0 +1,25 @@
+---
+title: Bazinga Local Server - Artifact API Code Level
+---
+classDiagram
+    class ArtifactEntry {
+        <<bazinga>>
+        +name: str
+        +path: str
+        +type: str
+    }
+
+    class ArtifactAPI {
+        +list_artifacts(project_path: str) list~ArtifactEntry~
+        +read_artifact(project_path: str, rel_path: str) str
+    }
+
+    class ArtifactPersistence {
+        +save_artifact(project_path: str, rel_path: str, content: str) str
+        +read_artifact(project_path: str, rel_path: str) str
+        +list_artifacts(project_path: str) list~ArtifactEntry~
+    }
+
+    ArtifactAPI ..> ArtifactEntry : returns
+    ArtifactAPI --> ArtifactPersistence : reads from repo
+    ArtifactPersistence ..> ArtifactEntry : returns

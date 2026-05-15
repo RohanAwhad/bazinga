@@ -13,34 +13,34 @@ sequenceDiagram
     participant ARTIFACTS as Project Artifacts
 
     Dev->>WEB: Types message in sidebar
-    WEB->>CHAT: (project_path, session_id, message) via WebSocket
+    WEB->>CHAT: chat(project_path: str, session_id: str, message: str) -> str
 
-    CHAT->>STATE: Load session history for (project_path, session_id)
-    STATE-->>CHAT: Conversation so far
+    CHAT->>STATE: load_session(project_path: str, session_id: str)
+    STATE-->>CHAT: list[Content]
 
-    CHAT->>MODEL: History + new message + tool declarations + project_path
+    CHAT->>MODEL: generate_content(contents: list[Content], config: GenerateContentConfig, project_path: str)
     MODEL->>LLM: generate_content (HTTPS/gRPC)
     LLM-->>MODEL: Response
 
-    alt Model returns text
-        MODEL-->>CHAT: Text response
-        CHAT->>STATE: Append user + model messages
-        CHAT-->>WEB: Stream text only
+    alt Response is text
+        MODEL-->>CHAT: Response
+        CHAT->>STATE: save_session(project_path: str, session_id: str, history: list[Content])
+        CHAT-->>WEB: str (text only)
         WEB-->>Dev: Shows text in sidebar
-    else Model returns tool calls
-        loop Until model returns text
-            MODEL-->>TOOLS: Tool call(s) scoped to project_path
-            TOOLS->>TOOLS: Execute (list_files, read_file, search_replace, etc.)
+    else Response has tool calls
+        loop Until Response is text
+            MODEL-->>TOOLS: handle_tool_calls(response: Response, history: list[Content], project_path: str)
+            TOOLS->>TOOLS: Execute (list_files, read_file, search_replace)
             opt Tool writes a diagram or spec
-                TOOLS->>PERSIST: Save artifact
+                TOOLS->>PERSIST: save_artifact(project_path: str, rel_path: str, content: str)
                 PERSIST->>ARTIFACTS: Write to project repo
             end
-            TOOLS-->>MODEL: Tool results
-            MODEL->>LLM: History + tool results
-            LLM-->>MODEL: Next response
+            TOOLS-->>MODEL: Append tool call + results to history: list[Content]
+            MODEL->>LLM: generate_content (HTTPS/gRPC)
+            LLM-->>MODEL: Response
         end
-        MODEL-->>CHAT: Final text response
-        CHAT->>STATE: Append full turn
-        CHAT-->>WEB: Stream text only
+        MODEL-->>CHAT: Response
+        CHAT->>STATE: save_session(project_path: str, session_id: str, history: list[Content])
+        CHAT-->>WEB: str (text only)
         WEB-->>Dev: Shows text in sidebar
     end
