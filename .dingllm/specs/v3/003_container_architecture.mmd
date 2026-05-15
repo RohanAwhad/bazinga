@@ -7,7 +7,8 @@ graph TD
     subgraph BZ["Bazinga"]
         WEB[Web UI]
         SERVER[Bazinga Local Server]
-        IMPL[Implementation Agent]
+        QUEUE[(Job Queue<br/><i>Redis</i>)]
+        WORKER[Implementation Worker<br/><i>Ephemeral container</i>]
         STATE[(State Store<br/><i>TinyDB</i>)]
     end
 
@@ -24,8 +25,9 @@ graph TD
     SERVER -->|Persists sessions and approvals| STATE
     SERVER -->|Reads repo context, writes diagrams/PRDs/roadmap| REPO
     SERVER -->|Chat, diagram, PRD generation; HTTPS| LLM
-    SERVER -->|Dispatches approved PRD| IMPL
-    IMPL -->|Spawns worktree, runs OpenCode| REPO
-
-    IMPL -->|Reports implementation status| SERVER
-    IMPL -.->|Creates PRs, reads checks; HTTPS| GITHUB
+    SERVER -->|Enqueues implementation job| QUEUE
+    WORKER -->|Picks up job| QUEUE
+    WORKER -->|Reports job status| QUEUE
+    SERVER -->|Subscribes to job status| QUEUE
+    WORKER -->|Clones repo, implements PRD, pushes branch| REPO
+    WORKER -.->|Creates PRs, reads checks; HTTPS| GITHUB

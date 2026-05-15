@@ -15,6 +15,7 @@
 |---------|---------|
 | `google-genai` | Vertex AI / Gemini SDK (`google.genai`) |
 | `tinydb` | State store for sessions, approvals, artifact links |
+| `redis` | Job queue and pub/sub for implementation worker status |
 | stdlib `pathlib` | File system operations for tools |
 
 ## Services
