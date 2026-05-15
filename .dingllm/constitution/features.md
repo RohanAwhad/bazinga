@@ -74,6 +74,12 @@ Developers should be able to brainstorm with an agent, generate architecture dia
 - Configure human-review-required policies by path, directory, file, risk type, and test impact.
 - Auto-merge only when CI passes, tests were not weakened, and policy gates allow it.
 
+### Diagram Tree Consistency
+
+- Diagrams form a parent-child tree (context -> container -> component -> code).
+- Detect when a parent diagram changes and propagate updates to stale children.
+- Detection is deterministic (content hashing). Updating is agent-driven (subagents).
+
 ## Phases
 
 ### Phase 0: Current CLI Prototype
@@ -161,3 +167,55 @@ Developers should be able to brainstorm with an agent, generate architecture dia
 - Agent autonomy should increase only as verification improves.
 - Risky files and deleted tests should require human review.
 - Human approval should happen at intent boundaries, not every tiny code diff.
+
+## Design Notes
+
+### Diagram Tree Consistency
+
+Diagrams have parent-child relationships that mirror the C4 drill-down hierarchy. When a parent diagram changes, all descendants may become stale. Today this is caught manually; it should be automated.
+
+**Tree structure**: stored in `.dingllm/specs/vN/.meta-tree.json` alongside the diagrams.
+
+```json
+{
+  "nodes": {
+    "001_context_architecture.mmd": {
+      "level": "context",
+      "type": "architecture",
+      "parent": null,
+      "hash": "abc123"
+    },
+    "003_container_architecture.mmd": {
+      "level": "container",
+      "type": "architecture",
+      "parent": "001_context_architecture.mmd",
+      "hash": "def456"
+    },
+    "004_server_component.mmd": {
+      "level": "component",
+      "type": "architecture",
+      "parent": "003_container_architecture.mmd",
+      "hash": "ghi789"
+    }
+  }
+}
+```
+
+- `parent: null` = root node.
+- `hash` = content hash of the `.mmd` file at last sync.
+- `level` and `type` tell the updating agent what kind of diagram to produce.
+
+**Detection workflow** (deterministic, runs after any `.mmd` write):
+
+1. Read `.meta-tree.json` and recompute hashes for all nodes.
+2. If a node's hash differs from stored, mark all descendants as stale.
+3. Report stale diagrams with their parent chain.
+
+**Update workflow** (agent-driven):
+
+1. For each stale child, launch a subagent with: the parent's new content, the child's current content, and the child's level/type.
+2. Subagent rewrites the child to be consistent with the parent.
+3. Validate the rewritten child with Playwright.
+4. Update hashes in `.meta-tree.json`.
+
+**Key property**: detection is cheap and programmatic. Updating requires understanding, so it uses agents. The tree ensures nothing is silently stale.
