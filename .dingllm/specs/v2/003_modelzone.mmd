@@ -1,0 +1,25 @@
+classDiagram
+    class ModelZone {
+        <<llm.py>>
+        +generate_content(history: list~Content~) Response
+        +TOOLS: list~Tool~
+    }
+
+    class generate_content {
+        <<Vertex AI SDK call>>
+        Input: conversation history (list of Content)
+        Output: GenerateContentResponse
+        Sends history + tool declarations to Gemini
+    }
+
+    class TOOLS {
+        <<JSON Schema declarations>>
+        Declares tool signatures for Gemini
+        list_files(path: string)
+        read_file(path: string)
+        search_replace(path: string, old_string: string, new_string: string, create_if_missing: boolean)
+    }
+
+    ModelZone --> generate_content : calls Gemini API
+    ModelZone --> TOOLS : configures model with tool schemas
+    TOOLS ..> generate_content : passed as tool declarations

@@ -1,0 +1,33 @@
+classDiagram
+    class ToolImpls {
+        <<tools.py>>
+        +list_files(path: str) str
+        +read_file(path: str) str
+        +search_replace(path: str, old_string: str, new_string: str, create_if_missing: bool) str
+    }
+
+    class list_files {
+        <<function>>
+        Input: directory path
+        Output: newline-separated file listing
+        Walks directory tree recursively
+    }
+
+    class read_file {
+        <<function>>
+        Input: file path
+        Output: file contents as string
+        Reads UTF-8 text files
+    }
+
+    class search_replace {
+        <<function>>
+        Input: path, old_string, new_string, create_if_missing
+        Output: success/error message
+        Replaces exact string match in file
+        Creates file if missing and flag is set
+    }
+
+    ToolImpls --> list_files
+    ToolImpls --> read_file
+    ToolImpls --> search_replace

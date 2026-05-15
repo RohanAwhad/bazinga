@@ -1,0 +1,32 @@
+classDiagram
+    class ScriptCore {
+        <<main.py>>
+        +parse_input(raw: str) list~Part~
+        +handle_tool_calls(response, history: list~Content~) str
+        +main() None
+    }
+
+    class parse_input {
+        <<function>>
+        Input: raw string from user
+        Output: list of Part (text, video, or PDF)
+        Handles: video prefix, PDF prefix, plain text
+    }
+
+    class handle_tool_calls {
+        <<function>>
+        Input: LLM response + conversation history
+        Output: final text response
+        Loop: resolves tool calls until no more remain
+    }
+
+    class main {
+        <<function>>
+        Initializes Vertex AI client and tools
+        Runs interactive chat loop
+        Manages conversation history
+    }
+
+    ScriptCore --> parse_input : parses user input
+    ScriptCore --> handle_tool_calls : resolves tool calls
+    ScriptCore --> main : entry point

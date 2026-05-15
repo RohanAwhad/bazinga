@@ -1,0 +1,20 @@
+C4Component
+  title Component diagram for Bazinga CLI
+
+  Person(dev, "Developer", "Uses Bazinga for AI-assisted coding")
+
+  System_Ext(vertexAi, "Vertex AI (Gemini)", "Google Cloud LLM API")
+  System_Ext(filesystem, "Local Filesystem", "Project files being edited")
+
+  Container_Boundary(cli, "Bazinga CLI (Python)") {
+    Component(scriptCore, "ScriptCore", "main.py", "Chat loop, input parsing, tool-call orchestration")
+    Component(modelZone, "ModelZone", "llm.py, Vertex AI SDK", "Content generation, tool schema declaration")
+    Component(toolImpls, "ToolImpls", "tools.py", "File ops: list_files, read_file, search_replace")
+  }
+
+  Rel(dev, scriptCore, "Sends prompts", "stdin/stdout")
+  Rel(scriptCore, modelZone, "Calls generate_content()")
+  Rel(scriptCore, toolImpls, "Dispatches tool calls via handle_tool_calls()")
+  Rel(modelZone, vertexAi, "Sends prompts, receives responses", "gRPC/HTTPS")
+  Rel(modelZone, toolImpls, "Tool schemas map 1:1 to implementations")
+  Rel(toolImpls, filesystem, "Reads/writes files")
