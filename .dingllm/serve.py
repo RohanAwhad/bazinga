@@ -8,10 +8,47 @@ Usage: python serve.py [--port 8000]
 import http.server
 import json
 import argparse
+import os
+import sys
+import threading
+import time
 from pathlib import Path
 from urllib.parse import unquote
 
 ROOT = Path(__file__).parent
+
+_file_version = 0
+_last_mtimes: dict[str, float] = {}
+
+
+def _scan_mtimes() -> dict[str, float]:
+    mtimes = {}
+    for p in ROOT.rglob("*"):
+        if p.suffix in (".md", ".mmd") and p.is_file():
+            mtimes[str(p)] = p.stat().st_mtime
+    return mtimes
+
+
+def _watch_files():
+    global _file_version, _last_mtimes
+    _last_mtimes = _scan_mtimes()
+    while True:
+        time.sleep(1)
+        current = _scan_mtimes()
+        if current != _last_mtimes:
+            _last_mtimes = current
+            _file_version += 1
+
+
+def _watch_self():
+    mtime = Path(__file__).stat().st_mtime
+    while True:
+        time.sleep(1)
+        current = Path(__file__).stat().st_mtime
+        if current != mtime:
+            print("  serve.py changed, restarting...")
+            os.execv(sys.executable, [sys.executable] + sys.argv)
+
 
 HTML_SHELL = """<!DOCTYPE html>
 <html><head>
@@ -37,6 +74,17 @@ HTML_SHELL = """<!DOCTYPE html>
 <div class="nav"><a href="/">index</a></div>
 {body}
 {scripts}
+<script>
+(function() {{
+  var es = new EventSource('/_events');
+  var connected = false;
+  es.onopen = function() {{
+    if (connected) location.reload();
+    connected = true;
+  }};
+  es.onmessage = function(e) {{ if (e.data === 'reload') location.reload(); }};
+}})();
+</script>
 </body></html>"""
 
 MARKED_SCRIPTS = """
@@ -53,75 +101,30 @@ MERMAID_SCRIPTS = """
   import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs';
   mermaid.initialize({ startOnLoad: false, theme: 'default' });
 
-  const editor = document.getElementById('mmd-editor');
+  const src = document.getElementById('mmd-source').textContent;
   const preview = document.getElementById('mmd-preview');
-  const status = document.getElementById('save-status');
-  let debounceTimer;
-  let pzInstance = null;
-  let renderCount = 0;
-
-  async function renderPreview() {
-    const src = editor.value;
-    if (pzInstance) { pzInstance.destroy(); pzInstance = null; }
-    preview.innerHTML = '';
-    try {
-      const id = 'mmd-output-' + (renderCount++);
-      const { svg } = await mermaid.render(id, src);
-      preview.innerHTML = svg;
-      const svgEl = preview.querySelector('svg');
-      if (svgEl) {
-        svgEl.setAttribute('width', '100%');
-        svgEl.setAttribute('height', '100%');
-        svgEl.style.maxWidth = '100%';
-        pzInstance = svgPanZoom(svgEl, {
-          center: true,
-          fit: true,
-          controlIconsEnabled: false,
-          zoomEnabled: true,
-          panEnabled: true,
-          minZoom: 0.2,
-          maxZoom: 12,
-          zoomScaleSensitivity: 0.3,
-        });
-      }
-    } catch (e) {
-      preview.innerHTML = '<pre style="color:#cf222e;padding:1rem;">' + e.message + '</pre>';
+  try {
+    const { svg } = await mermaid.render('mmd-output', src);
+    preview.innerHTML = svg;
+    const svgEl = preview.querySelector('svg');
+    if (svgEl) {
+      svgEl.setAttribute('width', '100%');
+      svgEl.setAttribute('height', '100%');
+      svgEl.style.maxWidth = '100%';
+      svgPanZoom(svgEl, {
+        center: true,
+        fit: true,
+        controlIconsEnabled: false,
+        zoomEnabled: true,
+        panEnabled: true,
+        minZoom: 0.2,
+        maxZoom: 12,
+        zoomScaleSensitivity: 0.3,
+      });
     }
+  } catch (e) {
+    preview.innerHTML = '<pre style="color:#cf222e;padding:1rem;">' + e.message + '</pre>';
   }
-
-  editor.addEventListener('input', () => {
-    clearTimeout(debounceTimer);
-    status.textContent = '';
-    debounceTimer = setTimeout(renderPreview, 400);
-  });
-
-  // Cmd+S / Ctrl+S to save
-  document.addEventListener('keydown', (e) => {
-    if ((e.metaKey || e.ctrlKey) && e.key === 's') {
-      e.preventDefault();
-      saveToDisk();
-    }
-  });
-
-  async function saveToDisk() {
-    status.textContent = 'saving...';
-    const resp = await fetch(window.location.pathname, {
-      method: 'POST',
-      headers: { 'Content-Type': 'text/plain' },
-      body: editor.value,
-    });
-    if (resp.ok) {
-      status.textContent = 'saved';
-      setTimeout(() => { status.textContent = ''; }, 2000);
-    } else {
-      status.textContent = 'save failed!';
-    }
-  }
-
-  document.getElementById('save-btn').addEventListener('click', saveToDisk);
-
-  // Initial render
-  renderPreview();
 </script>
 """
 
@@ -140,16 +143,49 @@ def collect_files():
     return tree
 
 
-def render_index():
+def _file_list_html(active: Path | None = None) -> str:
     tree = collect_files()
-    items = []
-    for dir_name in sorted(tree.keys()):
-        if dir_name:
-            items.append(f'<li class="dir">{dir_name}/</li>')
-        for rel_path in sorted(tree[dir_name]):
+    all_dirs = sorted(tree.keys())
+
+    def _child_dirs(prefix: str) -> list[str]:
+        if prefix == "":
+            return sorted({d.split("/")[0] for d in all_dirs if d})
+        return sorted({
+            d for d in all_dirs
+            if d.startswith(prefix + "/") and d.count("/") == prefix.count("/") + 1
+        })
+
+    def _has_active(prefix: str) -> bool:
+        """Check if active file is anywhere under this prefix."""
+        if not active:
+            return False
+        for d in all_dirs:
+            if d == prefix or d.startswith(prefix + "/"):
+                if any(r == active for r in tree.get(d, [])):
+                    return True
+        return False
+
+    def _render_dir(prefix: str) -> str:
+        lines: list[str] = []
+        for rel_path in sorted(tree.get(prefix, [])):
             suffix_label = "mermaid" if rel_path.suffix == ".mmd" else "md"
-            items.append(f'<li><a href="/{rel_path}">{rel_path.name}</a> <small>({suffix_label})</small></li>')
-    body = "<h1>.dingllm docs</h1>\n<ul class='file-list'>\n" + "\n".join(items) + "\n</ul>"
+            name = f"<strong>{rel_path.name}</strong>" if active and rel_path == active else rel_path.name
+            lines.append(f'<li><a href="/{rel_path}">{name}</a> <small>({suffix_label})</small></li>')
+        for child in _child_dirs(prefix):
+            dir_label = child.rsplit("/", 1)[-1]
+            open_attr = " open" if _has_active(child) else ""
+            inner = _render_dir(child)
+            lines.append(
+                f'<li><details{open_attr}><summary class="dir">{dir_label}/</summary>'
+                f'<ul class="file-list">{inner}</ul></details></li>'
+            )
+        return "\n".join(lines)
+
+    return "<ul class='file-list'>\n" + _render_dir("") + "\n</ul>"
+
+
+def render_index():
+    body = "<h1>.dingllm docs</h1>\n" + _file_list_html()
     return HTML_SHELL.format(title=".dingllm", body=body, scripts="")
 
 
@@ -163,16 +199,14 @@ def render_md(path: Path):
 
 def render_mmd(path: Path):
     content = path.read_text()
-    escaped = content.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
+    rel = path.relative_to(ROOT)
+    index_html = _file_list_html(active=rel)
     body = f"""
+<script type="text/plain" id="mmd-source">{content}</script>
 <div style="width:80vw;margin-left:calc(50% - 40vw);height:calc(100vh - 8rem);display:flex;gap:1.5rem;">
-  <div style="flex:0 0 40%;display:flex;flex-direction:column;min-width:0;">
-    <div style="display:flex;align-items:center;gap:0.5rem;margin-bottom:0.5rem;">
-      <button id="save-btn" style="padding:0.3rem 0.8rem;cursor:pointer;border:1px solid #d1d9e0;border-radius:4px;background:#f6f8fa;">Save</button>
-      <span id="save-status" style="font-size:0.85rem;color:#57606a;"></span>
-      <span style="font-size:0.75rem;color:#8b949e;margin-left:auto;">Cmd+S to save</span>
-    </div>
-    <textarea id="mmd-editor" spellcheck="false" style="flex:1;font-family:monospace;font-size:13px;padding:0.75rem;border:1px solid #d1d9e0;border-radius:6px;resize:none;background:#f6f8fa;tab-size:4;">{escaped}</textarea>
+  <div style="flex:0 0 250px;overflow-y:auto;padding-right:1rem;border-right:1px solid #d1d9e0;">
+    <h3 style="margin-top:0;">.dingllm</h3>
+    {index_html}
   </div>
   <div id="mmd-preview" style="flex:1;overflow:hidden;border:1px solid #d1d9e0;border-radius:6px;padding:1rem;position:relative;"></div>
 </div>"""
@@ -185,6 +219,10 @@ class Handler(http.server.BaseHTTPRequestHandler):
 
         if path == "" or path == "/":
             self._respond(200, render_index())
+            return
+
+        if path == "_events":
+            self._handle_sse()
             return
 
         file_path = ROOT / path
@@ -200,6 +238,20 @@ class Handler(http.server.BaseHTTPRequestHandler):
             self._respond_binary(200, file_path.read_bytes(), "image/png")
         else:
             self._respond(404, HTML_SHELL.format(title="404", body="<h1>404</h1><p>Unsupported file type.</p>", scripts=""))
+
+    def _handle_sse(self):
+        self.send_response(200)
+        self.send_header("Content-Type", "text/event-stream")
+        self.send_header("Cache-Control", "no-cache")
+        self.send_header("Connection", "keep-alive")
+        self.end_headers()
+        last_seen = _file_version
+        while True:
+            time.sleep(1)
+            if _file_version != last_seen:
+                last_seen = _file_version
+                self.wfile.write(b"data: reload\n\n")
+                self.wfile.flush()
 
     def do_POST(self):
         path = unquote(self.path).lstrip("/")
@@ -217,6 +269,7 @@ class Handler(http.server.BaseHTTPRequestHandler):
         length = int(self.headers.get("Content-Length", 0))
         body = self.rfile.read(length).decode("utf-8")
         file_path.write_text(body)
+        _last_mtimes[str(file_path)] = file_path.stat().st_mtime
         print(f"  saved {file_path.relative_to(ROOT)}")
         self._respond_json(200, {"ok": True})
 
@@ -247,8 +300,11 @@ def main():
     parser.add_argument("--port", type=int, default=8000)
     args = parser.parse_args()
 
-    server = http.server.HTTPServer(("", args.port), Handler)
-    print(f"Serving .dingllm at http://localhost:{args.port}")
+    threading.Thread(target=_watch_files, daemon=True).start()
+    threading.Thread(target=_watch_self, daemon=True).start()
+
+    server = http.server.ThreadingHTTPServer(("", args.port), Handler)
+    print(f"Serving .dingllm at http://localhost:{args.port} (hot reload enabled)")
     server.serve_forever()
 
 
