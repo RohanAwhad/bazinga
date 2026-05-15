@@ -4,9 +4,10 @@
 
 | Component | Value |
 |-----------|-------|
-| Language | Python 3.x |
-| Package manager | uv (assumed) |
-| Runtime | Local CLI |
+| Language | Python 3.12 |
+| Package manager | uv |
+| Current runtime | Local CLI |
+| Target runtime | Web/IDE-like UI plus local agent orchestration |
 
 ## Dependencies
 
@@ -22,11 +23,17 @@
 | Google Vertex AI | Model backend, project: `redhat-ai-analysis`, location: `global` |
 | Model | `gemini-3.1-pro-preview` |
 
+## Target Stack
+
+Future UI and orchestration stack is intentionally TBD. Do not treat the current CLI architecture as the final product architecture.
+
 ## Repo Layout
 
 | Path | Purpose |
 |------|---------|
-| `play.py` | Current monolith (CLI agent) |
+| `main.py` | Current CLI loop, input parsing, and tool-call execution loop |
+| `llm.py` | Gemini client init, model config, tool declarations, API wrapper |
+| `tools.py` | Tool implementations and `TOOL_FUNCTIONS` registry |
 | `gemini_vertex.py` | Standalone Vertex AI tool-calling example |
 | `.dingllm/specs/` | Mermaid sequence/architecture/class diagrams |
 | `.dingllm/constitution/` | Project constitution (this directory) |
