@@ -38,3 +38,7 @@ See `features.md` for the full product capability map.
 - [ ] Add policy guardrails and human-review-required labeling
 - [ ] Add safe auto-merge for low-risk PRs with passing trusted CI
 - [ ] Add optional ambient interaction with explicit privacy controls
+
+## Bugs
+
+- [ ] 003 container architecture diagram is hard to read -- too many crossing arrows. Neither `graph TD` nor `graph LR` layout works well. Need a better layout strategy for diagrams with 10+ edges.
