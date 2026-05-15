@@ -1,0 +1,34 @@
+---
+title: Bazinga MVP - Container Architecture
+---
+graph TD
+    DEV([Developer])
+
+    subgraph BZ["Bazinga"]
+        WEB[Web UI]
+        SERVER[Bazinga Local Server]
+        IMPL[Implementation Agent]
+        STATE[(State Store)]
+    end
+
+    subgraph PROJECT["Target Project Workspace"]
+        REPO[Project Files]
+        ARTIFACTS[(Project Artifacts)]
+    end
+
+    subgraph EXT["External Services"]
+        LLM[LLM Provider]
+        GITHUB[GitHub / CI]
+    end
+
+    DEV -->|Reviews diagrams, approves intent| WEB
+    WEB -->|Chat, artifacts, approvals; WebSocket| SERVER
+    SERVER -->|Streams responses, diagram state; WebSocket| WEB
+    SERVER -->|Persists sessions and approvals| STATE
+    SERVER -->|Reads repo context| REPO
+    SERVER -->|Writes diagrams, PRDs, roadmap| ARTIFACTS
+    SERVER -->|Chat, diagram, PRD generation; HTTPS| LLM
+    SERVER -->|Dispatches approved PRD| IMPL
+    IMPL -->|Spawns worktree, runs OpenCode| REPO
+    IMPL -->|Reports implementation status| SERVER
+    IMPL -.->|Creates PRs, reads checks; HTTPS| GITHUB
