@@ -1,0 +1,66 @@
+---
+title: Test - Chat Sequence Assertions
+---
+sequenceDiagram
+    actor Dev as Developer
+    participant WEB as Web UI
+    participant CHAT as Chat API
+    participant STATE as State Store
+    participant MODEL as Model Client
+    participant LLM as LLM Provider
+    participant TOOLS as Tool Executor
+    participant PERSIST as Artifact Persistence
+    participant ARTIFACTS as Project Artifacts
+
+    Dev->>WEB: Types message in sidebar
+    WEB->>CHAT: chat(project_path: str, session_id: str, message: str) -> str
+    Note right of CHAT: assert session_id is not empty
+    Note right of CHAT: assert project_path exists on filesystem
+
+    CHAT->>STATE: load_session(project_path: str, session_id: str)
+    STATE-->>CHAT: list[Content]
+    Note right of STATE: assert returns list (empty for new session)
+
+    CHAT->>MODEL: generate_content(contents: list[Content], config: GenerateContentConfig, project_path: str)
+    Note right of MODEL: assert contents has user message appended
+    MODEL->>LLM: generate_content (HTTPS/gRPC)
+    LLM-->>MODEL: Response
+    Note right of MODEL: assert Response is not None
+
+    alt Response is text
+        MODEL-->>CHAT: Response
+        Note right of CHAT: assert Response.text is non-empty str
+        CHAT->>STATE: save_session(project_path: str, session_id: str, history: list[Content])
+        Note right of STATE: assert history has user + model turns
+        Note right of STATE: assert len(history) == prev + 2
+        CHAT-->>WEB: str (text only)
+        Note right of WEB: assert response is str, not Response
+        WEB-->>Dev: Shows text in sidebar
+    else Response has tool calls
+        loop Until Response is text
+            MODEL-->>TOOLS: handle_tool_calls(response: Response, history: list[Content], project_path: str)
+            Note right of TOOLS: assert tool name exists in TOOL_FUNCTIONS
+            Note right of TOOLS: assert tool args match expected schema
+            TOOLS->>TOOLS: Execute (list_files, read_file, search_replace)
+            Note right of TOOLS: assert tool result is str
+            opt Tool writes a diagram or spec
+                TOOLS->>PERSIST: save_artifact(project_path: str, rel_path: str, content: str)
+                Note right of PERSIST: assert rel_path is within project_path
+                PERSIST->>ARTIFACTS: Write to project repo
+                Note right of ARTIFACTS: assert file exists after write
+                Note right of ARTIFACTS: assert file content matches input
+            end
+            TOOLS-->>MODEL: Append tool call + results to history: list[Content]
+            Note right of MODEL: assert history grew by 2 (tool call + tool result)
+            MODEL->>LLM: generate_content (HTTPS/gRPC)
+            LLM-->>MODEL: Response
+        end
+        MODEL-->>CHAT: Response
+        Note right of CHAT: assert Response.text is non-empty str
+        Note right of CHAT: assert no more tool calls in Response
+        CHAT->>STATE: save_session(project_path: str, session_id: str, history: list[Content])
+        Note right of STATE: assert history includes all tool turns
+        CHAT-->>WEB: str (text only)
+        Note right of WEB: assert response is str, not Response
+        WEB-->>Dev: Shows text in sidebar
+    end
