@@ -1,0 +1,46 @@
+---
+title: Chat Sequence - User Sends Message
+---
+sequenceDiagram
+    actor Dev as Developer
+    participant WEB as Web UI
+    participant CHAT as Chat API
+    participant STATE as State Store
+    participant MODEL as Model Client
+    participant LLM as LLM Provider
+    participant TOOLS as Tool Executor
+    participant PERSIST as Artifact Persistence
+    participant ARTIFACTS as Project Artifacts
+
+    Dev->>WEB: Types message in sidebar
+    WEB->>CHAT: (project_path, session_id, message) via WebSocket
+
+    CHAT->>STATE: Load session history for (project_path, session_id)
+    STATE-->>CHAT: Conversation so far
+
+    CHAT->>MODEL: History + new message + tool declarations + project_path
+    MODEL->>LLM: generate_content (HTTPS/gRPC)
+    LLM-->>MODEL: Response
+
+    alt Model returns text
+        MODEL-->>CHAT: Text response
+        CHAT->>STATE: Append user + model messages
+        CHAT-->>WEB: Stream text only
+        WEB-->>Dev: Shows text in sidebar
+    else Model returns tool calls
+        loop Until model returns text
+            MODEL-->>TOOLS: Tool call(s) scoped to project_path
+            TOOLS->>TOOLS: Execute (list_files, read_file, search_replace, etc.)
+            opt Tool writes a diagram or spec
+                TOOLS->>PERSIST: Save artifact
+                PERSIST->>ARTIFACTS: Write to project repo
+            end
+            TOOLS-->>MODEL: Tool results
+            MODEL->>LLM: History + tool results
+            LLM-->>MODEL: Next response
+        end
+        MODEL-->>CHAT: Final text response
+        CHAT->>STATE: Append full turn
+        CHAT-->>WEB: Stream text only
+        WEB-->>Dev: Shows text in sidebar
+    end

@@ -1,0 +1,32 @@
+---
+title: Bazinga Local Server - Components
+---
+graph TD
+    subgraph CONNECTED["Connected Containers"]
+        WEB[Web UI]
+        STATE[(State Store)]
+    end
+
+    subgraph SERVER["Bazinga Local Server"]
+        CHAT[Chat API]
+        ARTIFACT_API[Artifact API]
+        MODEL[Model Client]
+        TOOLS[Tool Executor]
+        PERSIST[Artifact Persistence]
+    end
+
+    subgraph EXT["External"]
+        LLM[LLM Provider]
+        ARTIFACTS[(Project Artifacts)]
+    end
+
+    WEB -->|session_id + message; WebSocket| CHAT
+    WEB -->|Browse, read, list artifacts; HTTP| ARTIFACT_API
+    CHAT -->|Conversation history + tool declarations| MODEL
+    MODEL -->|HTTPS/gRPC| LLM
+    MODEL -->|Tool calls| TOOLS
+    TOOLS -->|Tool results| MODEL
+    TOOLS -->|Saves diagrams, specs| PERSIST
+    PERSIST -->|Writes to repo| ARTIFACTS
+    ARTIFACT_API -->|Reads from repo| ARTIFACTS
+    CHAT -->|Saves/loads session history| STATE

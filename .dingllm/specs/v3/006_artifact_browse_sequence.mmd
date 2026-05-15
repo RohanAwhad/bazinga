@@ -1,0 +1,22 @@
+---
+title: Artifact Browse - Developer Views Diagram
+---
+sequenceDiagram
+    actor Dev as Developer
+    participant WEB as Web UI
+    participant AAPI as Artifact API
+    participant ARTIFACTS as Project Artifacts
+
+    Dev->>WEB: Opens artifact sidebar
+    WEB->>AAPI: GET /artifacts?project_path=...
+    AAPI->>ARTIFACTS: Read .dingllm/specs/ directory tree
+    ARTIFACTS-->>AAPI: File list
+    AAPI-->>WEB: [{name, path, type}]
+    WEB-->>Dev: Shows file list in sidebar
+
+    Dev->>WEB: Clicks on a diagram filename
+    WEB->>AAPI: GET /artifacts/{path}?project_path=...
+    AAPI->>ARTIFACTS: Read .mmd file from project repo
+    ARTIFACTS-->>AAPI: Mermaid source
+    AAPI-->>WEB: Mermaid source
+    WEB-->>Dev: Renders diagram in canvas
