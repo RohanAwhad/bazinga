@@ -80,6 +80,13 @@ Developers should be able to brainstorm with an agent, generate architecture dia
 - Detect when a parent diagram changes and propagate updates to stale children.
 - Detection is deterministic (content hashing). Updating is agent-driven (subagents).
 
+### Artifact Provenance Chain
+
+- Every artifact (diagram, PRD, commit, PR) carries a pointer to the specific git commit of its parent artifact.
+- Use git commit hashes as the tracking mechanism. No custom content hashing for cross-artifact links.
+- When a diagram is re-approved and committed, trace which PRDs and implementations reference the old commit and mark them stale.
+- Stale PRDs get regenerated, stale implementations get new PRDs, commits, and PRs.
+
 ## Phases
 
 ### Phase 0: Current CLI Prototype
@@ -219,3 +226,46 @@ Diagrams have parent-child relationships that mirror the C4 drill-down hierarchy
 4. Update hashes in `.meta-tree.json`.
 
 **Key property**: detection is cheap and programmatic. Updating requires understanding, so it uses agents. The tree ensures nothing is silently stale.
+
+### Artifact Provenance Chain
+
+The diagram tree handles diagram-to-diagram consistency. The provenance chain handles the full lifecycle: diagram -> PRD -> implementation -> PR.
+
+**Principle**: use git commit hashes as the tracking mechanism. Git already does content-addressable storage. When an approved diagram is committed, that commit hash becomes the provenance anchor for everything downstream.
+
+**Chain structure**:
+
+```
+diagram approved and committed (abc123)
+  -> PRD frontmatter references diagram_commit: abc123
+  -> PRD committed (def456)
+    -> implementation references prd_commit: def456
+    -> implementation committed (ghi789)
+      -> PR description references: diagram=abc123, prd=def456, impl=ghi789
+```
+
+**PRD frontmatter example**:
+
+```yaml
+---
+title: Sidebar Chat MVP
+diagram_commit: abc123
+diagram_file: .dingllm/specs/v3/004_server_component.mmd
+approved_at: 2026-05-15
+---
+```
+
+**Staleness detection**:
+
+1. Diagram gets re-approved and committed as new hash `xyz999`.
+2. Find all PRDs where `diagram_commit` no longer matches HEAD of that diagram file.
+3. Those PRDs are stale. All implementations referencing those PRDs are also stale.
+4. Agent generates new PRDs referencing `xyz999`, new implementations, new PRs.
+5. Old PRs can be closed with a link to the new ones.
+
+**Two mechanisms, complementary**:
+
+- `.meta-tree.json`: diagram-to-diagram parent-child consistency (which diagrams are children of which).
+- Git commit refs in frontmatter/PR descriptions: diagram-to-PRD-to-code provenance (full lifecycle tracking).
+
+**Key property**: every PR has full provenance. Reviewers and agents can trace any change back to the exact approved diagram and PRD that motivated it.
