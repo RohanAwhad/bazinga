@@ -1,0 +1,40 @@
+---
+title: Test - Artifact Browse Assertions
+---
+sequenceDiagram
+    actor Dev as Developer
+    participant WEB as Web UI
+    participant AAPI as Artifact API
+    participant ARTIFACTS as Project Artifacts
+
+    Dev->>WEB: Opens artifact sidebar
+    WEB->>AAPI: GET /artifacts?project_path=...
+    Note right of AAPI: assert project_path exists on filesystem
+    Note right of AAPI: assert missing .dingllm/ returns empty list, not error
+
+    AAPI->>ARTIFACTS: Read .dingllm/ directory tree
+    ARTIFACTS-->>AAPI: File list
+    Note right of AAPI: assert response is list of ArtifactEntry
+    Note right of AAPI: assert each entry has name, path, type (non-empty str)
+    Note right of AAPI: assert only approved types returned: md, mmd, txt
+    Note right of AAPI: assert files with other extensions are excluded
+    Note right of AAPI: assert entries match actual files in .dingllm/ tree
+    Note right of AAPI: assert empty .dingllm/ returns empty list
+    Note right of AAPI: assert nonexistent project_path returns error
+
+    AAPI-->>WEB: list[ArtifactEntry]
+    WEB-->>Dev: Shows file list in sidebar
+
+    Dev->>WEB: Clicks on a diagram filename
+    WEB->>AAPI: GET /artifacts/{path}?project_path=...
+    Note right of AAPI: assert rel_path is within project_path
+    Note right of AAPI: assert path traversal (../../) returns error
+    Note right of AAPI: assert rel_path is a file, not a directory
+
+    AAPI->>ARTIFACTS: Read .mmd file from project repo
+    ARTIFACTS-->>AAPI: Mermaid source
+    Note right of AAPI: assert nonexistent rel_path returns error
+
+    AAPI-->>WEB: str (artifact content)
+    Note right of WEB: assert response is str
+    WEB-->>Dev: Renders diagram in canvas

@@ -9,7 +9,7 @@ sequenceDiagram
 
     Dev->>WEB: Opens artifact sidebar
     WEB->>AAPI: GET /artifacts?project_path=...
-    AAPI->>ARTIFACTS: Read .dingllm/specs/ directory tree
+    AAPI->>ARTIFACTS: Read .dingllm/ directory tree
     ARTIFACTS-->>AAPI: File list
     AAPI-->>WEB: [{name, path, type}]
     WEB-->>Dev: Shows file list in sidebar
