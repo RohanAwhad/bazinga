@@ -42,3 +42,4 @@ See `features.md` for the full product capability map.
 ## Bugs
 
 - [ ] 003 container architecture diagram is hard to read -- too many crossing arrows. Neither `graph TD` nor `graph LR` layout works well. Need a better layout strategy for diagrams with 10+ edges.
+- [ ] Need a naming scheme for diagram files -- currently ad-hoc numbering makes it hard to tell which diagrams are static/dynamic views of the same thing, which are tests, and what C4 level they belong to.
