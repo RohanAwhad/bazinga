@@ -17,7 +17,7 @@ class ArtifactPersistence:
         target = (project / rel_path).resolve()
 
         # Validate rel_path is within project_path
-        if not str(target).startswith(str(project) + "/") and target != project:
+        if not target.is_relative_to(project):
             raise ValueError(
                 f"rel_path '{rel_path}' resolves outside project_path '{project_path}'"
             )

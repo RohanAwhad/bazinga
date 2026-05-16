@@ -12,3 +12,6 @@ wheels/
 # Worker image build artifacts
 skills/
 opencode.worker.json
+
+# Bazinga session database
+.bazinga_sessions.json

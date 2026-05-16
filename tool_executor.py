@@ -46,7 +46,7 @@ class ToolExecutor:
         else:
             resolved = p.resolve()
         # Validate scoping
-        if not str(resolved).startswith(str(project) + "/") and resolved != project:
+        if not resolved.is_relative_to(project):
             raise ValueError(
                 f"Path '{path}' resolves outside project_path '{project_path}'"
             )
