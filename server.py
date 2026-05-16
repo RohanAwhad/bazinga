@@ -11,6 +11,7 @@ from dataclasses import asdict
 
 from fastapi import FastAPI, HTTPException, Query
 from fastapi.responses import PlainTextResponse
+from loguru import logger
 
 from artifact_api import ArtifactAPI
 
@@ -25,9 +26,11 @@ def list_artifacts(project_path: str = Query(..., description="Absolute path to 
 
     Returns a JSON array of ArtifactEntry objects.
     """
+    logger.info("GET /artifacts project_path={}", project_path)
     try:
         entries = _artifact_api.list_artifacts(project_path)
     except FileNotFoundError as exc:
+        logger.exception("list_artifacts failed: {}", exc)
         raise HTTPException(status_code=400, detail=str(exc))
 
     return [asdict(entry) for entry in entries]
@@ -42,13 +45,17 @@ def read_artifact(
 
     Returns the file content as plain text.
     """
+    logger.info("GET /artifacts/{} project_path={}", path, project_path)
     try:
         content = _artifact_api.read_artifact(project_path, path)
     except FileNotFoundError as exc:
+        logger.exception("read_artifact failed: {}", exc)
         raise HTTPException(status_code=404, detail=str(exc))
     except ValueError as exc:
+        logger.exception("read_artifact failed: {}", exc)
         raise HTTPException(status_code=400, detail=str(exc))
     except IsADirectoryError as exc:
+        logger.exception("read_artifact failed: {}", exc)
         raise HTTPException(status_code=400, detail=str(exc))
 
     return PlainTextResponse(content)

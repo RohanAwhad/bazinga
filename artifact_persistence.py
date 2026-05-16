@@ -3,6 +3,8 @@
 from dataclasses import dataclass
 from pathlib import Path
 
+from loguru import logger
+
 APPROVED_EXTENSIONS = {"md", "mmd", "txt"}
 DINGLLM_DIR = ".dingllm"
 
@@ -63,6 +65,7 @@ class ArtifactPersistence:
 
         dingllm_resolved = dingllm.resolve()
 
+        logger.debug("Listing artifacts in {}", project_path)
         entries: list[ArtifactEntry] = []
         for file_path in sorted(dingllm.rglob("*")):
             # Skip symlinks to prevent traversal via symlink
@@ -85,6 +88,7 @@ class ArtifactPersistence:
                     type=ext,
                 )
             )
+        logger.debug("Found {} artifacts in {}", len(entries), project_path)
         return entries
 
     def read_artifact(self, project_path: str, rel_path: str) -> str:
@@ -96,6 +100,7 @@ class ArtifactPersistence:
         Raises IsADirectoryError if rel_path points to a directory.
         """
         _validate_rel_path(rel_path)
+        logger.debug("Reading artifact {} from {}", rel_path, project_path)
         _, target = _resolve_and_guard(project_path, rel_path)
 
         if not target.exists():
@@ -121,6 +126,7 @@ class ArtifactPersistence:
         Raises ValueError for path traversal, empty rel_path, or disallowed extensions.
         """
         _validate_rel_path(rel_path)
+        logger.debug("Saving artifact {} to {}", rel_path, project_path)
         _, target = _resolve_and_guard(project_path, rel_path)
 
         # Enforce approved extensions on writes
@@ -130,4 +136,5 @@ class ArtifactPersistence:
 
         target.parent.mkdir(parents=True, exist_ok=True)
         target.write_text(content, encoding="utf-8")
+        logger.debug("Saved artifact to {}", target)
         return str(target)
