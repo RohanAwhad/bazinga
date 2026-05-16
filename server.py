@@ -105,7 +105,7 @@ class ChatAPI:
     def create_session(self, project_path: str) -> str:
         """Create a new session for the given project. Returns session_id."""
         project_path = str(Path(project_path).resolve())
-        if project_path == "/":
+        if Path(project_path) == Path("/"):
             raise ValueError("project_path must not be the filesystem root")
         if not Path(project_path).exists():
             raise ValueError(f"project_path does not exist: {project_path}")
@@ -124,6 +124,8 @@ class ChatAPI:
         if not session_id:
             raise ValueError("session_id must not be empty")
         project_path = str(Path(project_path).resolve())
+        if Path(project_path) == Path("/"):
+            raise ValueError("project_path must not be the filesystem root")
         if not Path(project_path).exists():
             raise ValueError(f"project_path does not exist: {project_path}")
 
