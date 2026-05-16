@@ -220,32 +220,31 @@ class TestArtifactPersistenceRead:
         with pytest.raises(ValueError, match="encoding error"):
             persistence.read_artifact(str(tmp_path), "binary.md")
 
-    def test_symlink_excluded_from_listing(self, persistence: ArtifactPersistence, tmp_path: Path):
-        """Symlinks inside .dingllm/ should be skipped during listing."""
-        dingllm = tmp_path / ".dingllm"
-        dingllm.mkdir()
-        real_file = tmp_path / "outside.md"
-        real_file.write_text("secret")
-        symlink = dingllm / "link.md"
-        symlink.symlink_to(real_file)
-        # Also add a normal file so we know listing works
-        (dingllm / "normal.md").write_text("normal content")
-
-        entries = persistence.list_artifacts(str(tmp_path))
-        names = {e.name for e in entries}
-        assert "link.md" not in names
-        assert "normal.md" in names
-
-    def test_read_symlink_raises(self, persistence: ArtifactPersistence, tmp_path: Path):
-        """Reading a symlink inside .dingllm/ should raise ValueError."""
+    def test_symlink_included_in_listing(self, persistence: ArtifactPersistence, tmp_path: Path):
+        """Symlinks inside .dingllm/ should be included during listing."""
         dingllm = tmp_path / ".dingllm"
         dingllm.mkdir()
         real_file = dingllm / "real.md"
         real_file.write_text("real content")
         symlink = dingllm / "link.md"
         symlink.symlink_to(real_file)
-        with pytest.raises(ValueError, match="Symlinks not allowed"):
-            persistence.read_artifact(str(tmp_path), "link.md")
+        (dingllm / "normal.md").write_text("normal content")
+
+        entries = persistence.list_artifacts(str(tmp_path))
+        names = {e.name for e in entries}
+        assert "link.md" in names
+        assert "normal.md" in names
+
+    def test_read_symlink_succeeds(self, persistence: ArtifactPersistence, tmp_path: Path):
+        """Reading a symlink inside .dingllm/ should return target content."""
+        dingllm = tmp_path / ".dingllm"
+        dingllm.mkdir()
+        real_file = dingllm / "real.md"
+        real_file.write_text("real content")
+        symlink = dingllm / "link.md"
+        symlink.symlink_to(real_file)
+        content = persistence.read_artifact(str(tmp_path), "link.md")
+        assert content == "real content"
 
 
 class TestArtifactPersistenceSave:

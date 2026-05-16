@@ -104,6 +104,7 @@ See `006_test_artifact_browse_sequence.mmd` for full assertion diagram. Key asse
 
 ### Security
 - `rel_path` is validated to resolve within `project_path` before any file read.
+- Symlinks are allowed — both the `.dingllm/` directory and files within it may be symlinks. Path traversal prevention (resolve + prefix check) is the only guard.
 
 ## Dependencies
 
