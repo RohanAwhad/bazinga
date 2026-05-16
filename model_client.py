@@ -92,8 +92,23 @@ class ModelClient:
 
     @property
     def config(self) -> GenerateContentConfig:
-        """The default model configuration."""
+        """The default model configuration (without system instruction)."""
         return self._CONFIG
+
+    def _build_config(self, project_path: str) -> GenerateContentConfig:
+        """Build a config with system instruction scoped to project_path."""
+        system_instruction = (
+            f"You are Bazinga, a coding assistant. "
+            f"You are working on the project at: {project_path}\n"
+            f"All file paths in tool calls are relative to the project root. "
+            f"Use list_files to explore the project structure, read_file to read files, "
+            f"and search_replace to create or edit files. "
+            f"Always read a file before editing it."
+        )
+        return GenerateContentConfig(
+            tools=self._TOOLS,
+            system_instruction=system_instruction,
+        )
 
     def generate_content(
         self, contents: list[Content], config: GenerateContentConfig, project_path: str,
@@ -103,13 +118,14 @@ class ModelClient:
         Args:
             contents: Conversation history as list of Content objects.
             config: Model configuration including tools.
-            project_path: The project path for scoping.
+            project_path: The project path for scoping (injected into system instruction).
 
         Returns:
             Response from the model.
         """
+        scoped_config = self._build_config(project_path)
         return self._client.models.generate_content(
             model=self._MODEL,
             contents=contents,
-            config=config,
+            config=scoped_config,
         )
