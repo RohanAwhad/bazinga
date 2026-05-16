@@ -24,7 +24,7 @@ _last_mtimes: dict[str, float] = {}
 def _scan_mtimes() -> dict[str, float]:
     mtimes = {}
     for p in ROOT.rglob("*"):
-        if p.suffix in (".md", ".mmd") and p.is_file():
+        if p.suffix in (".md", ".mmd", ".html") and p.is_file():
             mtimes[str(p)] = p.stat().st_mtime
     return mtimes
 
@@ -133,7 +133,7 @@ def collect_files():
     """Walk ROOT and return a dict of {relative_dir: [filenames]} for .md and .mmd files."""
     tree = {}
     for path in sorted(ROOT.rglob("*")):
-        if path.suffix not in (".md", ".mmd"):
+        if path.suffix not in (".md", ".mmd", ".html"):
             continue
         if path.name == "serve.py":
             continue
@@ -168,7 +168,7 @@ def _file_list_html(active: Path | None = None) -> str:
     def _render_dir(prefix: str) -> str:
         lines: list[str] = []
         for rel_path in sorted(tree.get(prefix, [])):
-            suffix_label = "mermaid" if rel_path.suffix == ".mmd" else "md"
+            suffix_label = {".mmd": "mermaid", ".md": "md", ".html": "html"}.get(rel_path.suffix, rel_path.suffix)
             name = f"<strong>{rel_path.name}</strong>" if active and rel_path == active else rel_path.name
             lines.append(f'<li><a href="/{rel_path}">{name}</a> <small>({suffix_label})</small></li>')
         for child in _child_dirs(prefix):
@@ -195,6 +195,20 @@ def render_md(path: Path):
     escaped = content.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
     body = f'<script type="text/plain" id="md-source">{escaped}</script>\n<div id="content"></div>'
     return HTML_SHELL.format(title=path.name, body=body, scripts=MARKED_SCRIPTS)
+
+
+def render_html(path: Path):
+    rel = path.relative_to(ROOT)
+    index_html = _file_list_html(active=rel)
+    body = f"""
+<div style="width:80vw;margin-left:calc(50% - 40vw);height:calc(100vh - 8rem);display:flex;gap:1.5rem;">
+  <div style="flex:0 0 250px;overflow-y:auto;padding-right:1rem;border-right:1px solid #d1d9e0;">
+    <h3 style="margin-top:0;">.dingllm</h3>
+    {index_html}
+  </div>
+  <iframe src="/_raw/{rel}" style="flex:1;border:1px solid #d1d9e0;border-radius:6px;" frameborder="0"></iframe>
+</div>"""
+    return HTML_SHELL.format(title=path.name, body=body, scripts="")
 
 
 def render_mmd(path: Path):
@@ -225,6 +239,14 @@ class Handler(http.server.BaseHTTPRequestHandler):
             self._handle_sse()
             return
 
+        if path.startswith("_raw/"):
+            raw_path = ROOT / path[5:]
+            if raw_path.exists() and raw_path.is_file() and raw_path.suffix == ".html":
+                self._respond(200, raw_path.read_text())
+            else:
+                self._respond(404, "<h1>404</h1>")
+            return
+
         file_path = ROOT / path
         if not file_path.exists() or not file_path.is_file():
             self._respond(404, HTML_SHELL.format(title="404", body="<h1>404</h1><p>Not found.</p>", scripts=""))
@@ -234,6 +256,8 @@ class Handler(http.server.BaseHTTPRequestHandler):
             self._respond(200, render_md(file_path))
         elif file_path.suffix == ".mmd":
             self._respond(200, render_mmd(file_path))
+        elif file_path.suffix == ".html":
+            self._respond(200, render_html(file_path))
         elif file_path.suffix == ".png":
             self._respond_binary(200, file_path.read_bytes(), "image/png")
         else:
