@@ -1,0 +1,26 @@
+services:
+  worker:
+    build:
+      context: .
+      dockerfile: Dockerfile.worker
+    volumes:
+      - ~/.config/gcloud:/root/.config/gcloud:ro
+    environment:
+      - REPO_URL
+      - BRANCH_NAME
+      - PRD_PATH
+      - GH_TOKEN
+      - ANTHROPIC_VERTEX_PROJECT_ID
+      - CLOUD_ML_REGION
+      - GOOGLE_CLOUD_PROJECT
+      - GOOGLE_VERTEX_LOCATION
+      - CLAUDE_CODE_USE_VERTEX=1
+    stdin_open: true
+    tty: true
+    command: >
+      sh -c "
+        gh repo clone $$REPO_URL /repo &&
+        cd /repo &&
+        git checkout -b $$BRANCH_NAME &&
+        opencode run '/implement-prd $$PRD_PATH' --model google-vertex-anthropic/claude-opus-4-6@default --dangerously-skip-permissions
+      "

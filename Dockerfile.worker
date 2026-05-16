@@ -1,0 +1,27 @@
+FROM alpine:3.21
+
+# System deps
+RUN apk add --no-cache \
+    python3 py3-pip \
+    nodejs npm \
+    git openssh-client \
+    github-cli \
+    curl bash
+
+# uv (Python package manager)
+RUN curl -LsSf https://astral.sh/uv/install.sh | sh
+ENV PATH="/root/.local/bin:$PATH"
+
+# OpenCode
+RUN curl -fsSL https://opencode.ai/install | bash
+ENV PATH="/root/.opencode/bin:$PATH"
+
+# Claude/OpenCode skills
+RUN mkdir -p /root/.claude/skills
+COPY skills/ /root/.claude/skills/
+
+# OpenCode config
+RUN mkdir -p /root/.config/opencode
+COPY opencode.worker.json /root/.config/opencode/opencode.json
+
+WORKDIR /workspace
