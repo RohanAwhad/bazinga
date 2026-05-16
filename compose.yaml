@@ -22,5 +22,5 @@ services:
         gh repo clone $$REPO_URL /repo &&
         cd /repo &&
         git checkout -b $$BRANCH_NAME &&
-        opencode run '/implement-prd $$PRD_PATH' --model google-vertex-anthropic/claude-opus-4-6@default --dangerously-skip-permissions
+        opencode run '/implement-prd $$PRD_PATH and then push the branch and raise a pr. follow draft-pr workflow. for commit messages follow draft-commit workflow' --model google-vertex-anthropic/claude-opus-4-6@default --dangerously-skip-permissions
       "
