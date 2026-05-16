@@ -30,7 +30,7 @@ def list_artifacts(project_path: str = Query(..., description="Absolute path to 
     try:
         entries = _artifact_api.list_artifacts(project_path)
     except FileNotFoundError as exc:
-        logger.exception("list_artifacts failed: {}", exc)
+        logger.warning("list_artifacts failed: {}", exc)
         raise HTTPException(status_code=400, detail=str(exc))
 
     return [asdict(entry) for entry in entries]
@@ -49,13 +49,13 @@ def read_artifact(
     try:
         content = _artifact_api.read_artifact(project_path, path)
     except FileNotFoundError as exc:
-        logger.exception("read_artifact failed: {}", exc)
+        logger.warning("read_artifact failed: {}", exc)
         raise HTTPException(status_code=404, detail=str(exc))
     except ValueError as exc:
-        logger.exception("read_artifact failed: {}", exc)
+        logger.warning("read_artifact failed: {}", exc)
         raise HTTPException(status_code=400, detail=str(exc))
     except IsADirectoryError as exc:
-        logger.exception("read_artifact failed: {}", exc)
+        logger.warning("read_artifact failed: {}", exc)
         raise HTTPException(status_code=400, detail=str(exc))
 
     return PlainTextResponse(content)
