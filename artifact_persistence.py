@@ -101,7 +101,12 @@ class ArtifactPersistence:
         """
         _validate_rel_path(rel_path)
         logger.debug("Reading artifact {} from {}", rel_path, project_path)
-        _, target = _resolve_and_guard(project_path, rel_path)
+        dingllm, target = _resolve_and_guard(project_path, rel_path)
+
+        # Check symlink on the raw (unresolved) path for consistency with list_artifacts
+        raw_path = Path(project_path).resolve() / DINGLLM_DIR / rel_path
+        if raw_path.is_symlink():
+            raise ValueError(f"Symlinks not allowed: {rel_path}")
 
         if not target.exists():
             raise FileNotFoundError(f"Artifact not found: {rel_path}")

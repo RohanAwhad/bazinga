@@ -212,6 +212,14 @@ class TestArtifactPersistenceRead:
         with pytest.raises(ValueError, match="File type not allowed"):
             persistence.read_artifact(str(tmp_project), "data.json")
 
+    def test_read_binary_file_raises_encoding_error(self, persistence: ArtifactPersistence, tmp_path: Path):
+        """Binary files with approved extensions should raise ValueError with encoding error."""
+        dingllm = tmp_path / ".dingllm"
+        dingllm.mkdir()
+        (dingllm / "binary.md").write_bytes(b'\xff\xfe\x00\x01')
+        with pytest.raises(ValueError, match="encoding error"):
+            persistence.read_artifact(str(tmp_path), "binary.md")
+
     def test_symlink_excluded_from_listing(self, persistence: ArtifactPersistence, tmp_path: Path):
         """Symlinks inside .dingllm/ should be skipped during listing."""
         dingllm = tmp_path / ".dingllm"
@@ -227,6 +235,17 @@ class TestArtifactPersistenceRead:
         names = {e.name for e in entries}
         assert "link.md" not in names
         assert "normal.md" in names
+
+    def test_read_symlink_raises(self, persistence: ArtifactPersistence, tmp_path: Path):
+        """Reading a symlink inside .dingllm/ should raise ValueError."""
+        dingllm = tmp_path / ".dingllm"
+        dingllm.mkdir()
+        real_file = dingllm / "real.md"
+        real_file.write_text("real content")
+        symlink = dingllm / "link.md"
+        symlink.symlink_to(real_file)
+        with pytest.raises(ValueError, match="Symlinks not allowed"):
+            persistence.read_artifact(str(tmp_path), "link.md")
 
 
 class TestArtifactPersistenceSave:
