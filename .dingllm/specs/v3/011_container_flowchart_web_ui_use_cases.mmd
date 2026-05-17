@@ -1,0 +1,26 @@
+---
+title: Web UI - Use Cases (Phase 1)
+---
+graph LR
+    DEV([Developer])
+
+    subgraph WEBUI["Web UI"]
+        subgraph CHAT["Chat (WebSocket Client)"]
+            UC_SESSION[Start / resume session]
+            UC_SEND[Send chat message]
+            UC_STREAM[View streaming response]
+        end
+
+        subgraph ART["Artifacts (Artifact Client)"]
+            UC_BROWSE[Browse artifact list]
+            UC_MD[View markdown artifact]
+            UC_MMD[View mermaid diagram]
+        end
+    end
+
+    DEV --> UC_SESSION
+    DEV --> UC_SEND
+    DEV --> UC_STREAM
+    DEV --> UC_BROWSE
+    DEV --> UC_MD
+    DEV --> UC_MMD

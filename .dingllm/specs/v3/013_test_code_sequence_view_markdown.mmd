@@ -1,0 +1,32 @@
+---
+title: Test - View Markdown Artifact Assertions
+---
+sequenceDiagram
+    actor Dev as Developer
+    participant CP as Content Panel
+    participant Store as Session Store
+    participant HTTP as Artifact Client
+    participant API as Artifact API (Server)
+    participant MD as Markdown Renderer
+
+    Dev->>CP: Clicks .md artifact (from list or chat ref)
+    CP->>Store: Read selectedArtifact
+    Store-->>CP: ArtifactRef (path, label)
+    Note right of Store: assert selectedArtifact is not null
+    Note right of Store: assert path ends with .md
+
+    CP->>HTTP: fetchArtifact(path)
+    HTTP->>API: GET /artifacts/{path}
+    API-->>HTTP: Raw markdown content
+    Note right of API: assert response status 200
+    Note right of API: assert response body is non-empty string
+
+    HTTP-->>CP: string (markdown)
+    CP->>MD: Render markdown content
+    MD-->>CP: HTML output
+    Note right of MD: assert output is valid HTML
+    Note right of MD: assert headings, lists, code blocks rendered
+
+    CP->>Dev: Display rendered markdown
+    Note right of CP: assert content panel shows rendered HTML, not raw markdown
+    Note right of CP: assert file path shown in content header

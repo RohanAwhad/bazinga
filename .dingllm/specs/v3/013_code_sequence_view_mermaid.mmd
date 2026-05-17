@@ -1,0 +1,21 @@
+---
+title: View Mermaid Diagram
+---
+sequenceDiagram
+    actor Dev as Developer
+    participant CP as Content Panel
+    participant Store as Session Store
+    participant HTTP as Artifact Client
+    participant API as Artifact API (Server)
+    participant MMD as Mermaid Renderer
+
+    Dev->>CP: Clicks .mmd artifact (from list or chat ref)
+    CP->>Store: Read selectedArtifact
+    Store-->>CP: ArtifactRef (path, label)
+    CP->>HTTP: fetchArtifact(path)
+    HTTP->>API: GET /artifacts/{path}
+    API-->>HTTP: Raw mermaid content
+    HTTP-->>CP: string (mermaid)
+    CP->>MMD: Render mermaid content
+    MMD-->>CP: SVG output
+    CP->>Dev: Display rendered diagram

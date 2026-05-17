@@ -1,0 +1,15 @@
+---
+title: Browse Artifact List
+---
+sequenceDiagram
+    actor Dev as Developer
+    participant CP as Content Panel
+    participant HTTP as Artifact Client
+    participant API as Artifact API (Server)
+
+    Dev->>CP: Opens content panel / refreshes
+    CP->>HTTP: listArtifacts()
+    HTTP->>API: GET /artifacts
+    API-->>HTTP: ArtifactEntry[] (path, type, size)
+    HTTP-->>CP: ArtifactEntry[]
+    CP->>Dev: Render artifact list grouped by directory

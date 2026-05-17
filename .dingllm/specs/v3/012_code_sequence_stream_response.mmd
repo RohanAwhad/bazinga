@@ -1,0 +1,24 @@
+---
+title: View Streaming Response
+---
+sequenceDiagram
+    actor Dev as Developer
+    participant CP as Chat Panel
+    participant Store as Session Store
+    participant WS as WebSocket Client
+    participant API as Chat API (Server)
+
+    API->>WS: WsReceivePayload (type: chunk, content)
+    WS->>CP: onMessage(chunk)
+    CP->>Store: appendChunk(messageId, chunk)
+    CP->>Dev: Render streaming text
+
+    Note over API, WS: Repeats for each chunk
+
+    API->>WS: WsReceivePayload (type: done, artifactRefs)
+    WS->>CP: onMessage(done)
+    CP->>Store: Finalize message, store artifactRefs
+    CP->>Dev: Render complete message with clickable artifact refs
+
+    Dev->>CP: Clicks artifact ref
+    CP->>Store: setSelectedArtifact(ref)

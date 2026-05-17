@@ -1,0 +1,43 @@
+---
+title: Test - View Streaming Response Assertions
+---
+sequenceDiagram
+    actor Dev as Developer
+    participant CP as Chat Panel
+    participant Store as Session Store
+    participant WS as WebSocket Client
+    participant API as Chat API (Server)
+
+    API->>WS: WsReceivePayload (type: chunk, content)
+    Note right of WS: assert payload.type == "chunk"
+    Note right of WS: assert payload.content is non-empty string
+
+    WS->>CP: onMessage(chunk)
+    CP->>Store: appendChunk(messageId, chunk)
+    Note right of Store: assert message exists for messageId
+    Note right of Store: assert message.content grows by chunk length
+
+    CP->>Dev: Render streaming text
+    Note right of CP: assert partial text visible in UI
+    Note right of CP: assert message styled as assistant bubble
+
+    Note over API, WS: Repeats for each chunk
+    Note right of Store: assert final content == concatenation of all chunks
+
+    API->>WS: WsReceivePayload (type: done, artifactRefs)
+    Note right of WS: assert payload.type == "done"
+
+    WS->>CP: onMessage(done)
+    CP->>Store: Finalize message, store artifactRefs
+    Note right of Store: assert message is marked complete
+    Note right of Store: assert artifactRefs stored on message (may be empty)
+    Note right of Store: assert each artifactRef has path and label
+
+    CP->>Dev: Render complete message with clickable artifact refs
+    Note right of CP: assert artifact refs rendered as clickable elements
+    Note right of CP: assert streaming indicator removed
+
+    Dev->>CP: Clicks artifact ref
+    CP->>Store: setSelectedArtifact(ref)
+    Note right of Store: assert selectedArtifact.path matches clicked ref
+    Note right of Store: assert selectedArtifact is not null after click

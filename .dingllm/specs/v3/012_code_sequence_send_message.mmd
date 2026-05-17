@@ -1,0 +1,16 @@
+---
+title: Send Chat Message
+---
+sequenceDiagram
+    actor Dev as Developer
+    participant CP as Chat Panel
+    participant Store as Session Store
+    participant WS as WebSocket Client
+    participant API as Chat API (Server)
+
+    Dev->>CP: Types message, clicks Send
+    CP->>Store: addMessage(user message)
+    CP->>Dev: Render user message bubble
+    CP->>WS: send(WsSendPayload)
+    WS->>API: WebSocket frame (sessionId, content)
+    API-->>WS: Ack / processing

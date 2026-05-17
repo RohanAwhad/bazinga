@@ -1,0 +1,79 @@
+---
+title: Chat Panel + WebSocket Client - Code Level
+---
+classDiagram
+    class ChatMessage {
+        +string id
+        +Role role
+        +string content
+        +ArtifactRef[] artifactRefs
+    }
+
+    class ArtifactRef {
+        +string path
+        +string label
+    }
+
+    class Role {
+        <<enumeration>>
+        user
+        assistant
+    }
+
+    class ConnectionStatus {
+        <<enumeration>>
+        connecting
+        connected
+        disconnected
+        error
+    }
+
+    class WsSendPayload {
+        +string type = "chat"
+        +string sessionId
+        +string content
+    }
+
+    class WsReceivePayload {
+        +string type
+        +string content
+        +ArtifactRef[] artifactRefs
+    }
+
+    class WebSocketClient {
+        -WebSocket socket
+        -ConnectionStatus status
+        +connect(url: string) void
+        +disconnect() void
+        +send(payload: WsSendPayload) void
+        +onMessage(handler: WsReceivePayload => void) void
+        +onStatusChange(handler: ConnectionStatus => void) void
+    }
+
+    class ChatPanel {
+        -string inputText
+        -ChatMessage[] messages
+        +handleSend() void
+        +handleArtifactClick(ref: ArtifactRef) void
+    }
+
+    class SessionStore {
+        +string sessionId
+        +ChatMessage[] messages
+        +ArtifactRef selectedArtifact
+        +addMessage(msg: ChatMessage) void
+        +appendChunk(id: string, chunk: string) void
+        +setSelectedArtifact(ref: ArtifactRef) void
+    }
+
+    ChatMessage --> Role
+    ChatMessage --> "*" ArtifactRef
+    WsReceivePayload --> "*" ArtifactRef
+
+    ChatPanel --> WebSocketClient : sends/receives messages
+    ChatPanel --> SessionStore : reads messages, writes selection
+    WebSocketClient --> WsSendPayload : sends
+    WebSocketClient --> WsReceivePayload : receives
+    WebSocketClient --> ConnectionStatus : tracks
+    SessionStore --> "*" ChatMessage : stores
+    SessionStore --> ArtifactRef : selected artifact

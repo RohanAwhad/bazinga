@@ -111,6 +111,7 @@ Developers should be able to brainstorm with an agent, generate architecture dia
 - Support context, container, component, and sequence diagrams.
 - Add diagram approval action.
 - Store approved diagrams as project artifacts.
+- HTML rendering in the content panel (wireframes, rich previews).
 
 ### Phase 3: Multimodal Input
 

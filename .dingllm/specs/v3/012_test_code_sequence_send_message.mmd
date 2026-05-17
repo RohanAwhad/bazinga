@@ -1,0 +1,31 @@
+---
+title: Test - Send Chat Message Assertions
+---
+sequenceDiagram
+    actor Dev as Developer
+    participant CP as Chat Panel
+    participant Store as Session Store
+    participant WS as WebSocket Client
+    participant API as Chat API (Server)
+
+    Dev->>CP: Types message, clicks Send
+    Note right of CP: assert input is non-empty string
+    Note right of CP: assert input is cleared after send
+
+    CP->>Store: addMessage(user message)
+    Note right of Store: assert message.role == "user"
+    Note right of Store: assert message.id is non-empty string
+    Note right of Store: assert messages.length == prev + 1
+
+    CP->>Dev: Render user message bubble
+    Note right of CP: assert new message appears in list
+    Note right of CP: assert message styled as user bubble
+
+    CP->>WS: send(WsSendPayload)
+    Note right of WS: assert payload.type == "chat"
+    Note right of WS: assert payload.sessionId matches current session
+    Note right of WS: assert payload.content matches input text
+
+    WS->>API: WebSocket frame (sessionId, content)
+    Note right of WS: assert connection status is "connected" before send
+    API-->>WS: Ack / processing

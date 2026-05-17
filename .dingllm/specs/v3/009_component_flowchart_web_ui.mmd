@@ -1,0 +1,35 @@
+---
+title: Web UI - Component Architecture (Phase 1)
+---
+graph TD
+    subgraph WEBUI["Web UI <br/><i>React + TypeScript</i>"]
+        subgraph UI["UI Components"]
+            SHELL[App Shell<br/><i>Root layout</i><br/>Sidebar + main panel split]
+            CHAT[Chat Panel<br/><i>Sidebar</i><br/>Message list, text input]
+            CONTENT[Content Panel<br/><i>Main panel</i><br/>Renders selected artifact]
+            MD[Markdown Renderer<br/>Markdown to HTML]
+            MMD[Mermaid Renderer<br/>MMD to SVG]
+        end
+
+        subgraph INFRA["Infrastructure Components"]
+            WS[WebSocket Client<br/>Chat API connection]
+            HTTP[Artifact Client<br/>Artifact API fetch]
+            STORE[Session Store<br/>Session, messages, selection]
+        end
+    end
+
+    subgraph SERVER["Local Server"]
+        CHAT_API[Chat API<br/><i>WebSocket</i>]
+        ART_API[Artifact API<br/><i>HTTP GET</i>]
+    end
+
+    CHAT -->|Sends user message| WS
+    WS -->|Streams assistant response| CHAT
+    CHAT -->|Writes selected artifact ref| STORE
+    CHAT -->|Reads/writes messages| STORE
+    CONTENT -->|Reads selected artifact| STORE
+    CONTENT -->|Fetches artifact content| HTTP
+    CONTENT -->|Delegates .md| MD
+    CONTENT -->|Delegates .mmd| MMD
+    WS -->|Chat, streaming; WS| CHAT_API
+    HTTP -->|Fetch artifact; HTTP GET| ART_API

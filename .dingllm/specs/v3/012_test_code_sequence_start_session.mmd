@@ -1,0 +1,42 @@
+---
+title: Test - Start / Resume Session Assertions
+---
+sequenceDiagram
+    actor Dev as Developer
+    participant CP as Chat Panel
+    participant Store as Session Store
+    participant WS as WebSocket Client
+    participant API as Chat API (Server)
+
+    Dev->>CP: Opens app / selects session
+    CP->>Store: Read existing sessions
+    Store-->>CP: Session list
+    Note right of Store: assert returns list (empty OK for first use)
+    CP->>Dev: Show session list or empty state
+    Note right of CP: assert UI renders session list or empty state prompt
+
+    alt New session
+        Dev->>CP: Click "New session"
+        CP->>Store: Create session (new ID)
+        Store-->>CP: Session ID
+        Note right of Store: assert sessionId is non-empty string
+        Note right of Store: assert sessionId is unique across existing sessions
+    else Resume session
+        Dev->>CP: Click existing session
+        CP->>Store: Load session messages
+        Store-->>CP: ChatMessage[]
+        Note right of Store: assert returns ChatMessage[] (may be empty)
+        Note right of Store: assert each message has id, role, content
+        CP->>Dev: Render message history
+        Note right of CP: assert message count matches store
+        Note right of CP: assert message order is chronological
+    end
+
+    CP->>WS: connect(sessionId)
+    Note right of WS: assert sessionId matches selected/created session
+    WS->>API: Open WebSocket connection
+    API-->>WS: Connection established
+    Note right of WS: assert status transitions: connecting -> connected
+    WS-->>CP: Status: connected
+    Note right of CP: assert UI reflects connected state
+    Note right of CP: assert send button is enabled

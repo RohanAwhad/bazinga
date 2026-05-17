@@ -1,0 +1,22 @@
+---
+title: Test - Browse Artifact List Assertions
+---
+sequenceDiagram
+    actor Dev as Developer
+    participant CP as Content Panel
+    participant HTTP as Artifact Client
+    participant API as Artifact API (Server)
+
+    Dev->>CP: Opens content panel / refreshes
+    CP->>HTTP: listArtifacts()
+    HTTP->>API: GET /artifacts
+    API-->>HTTP: ArtifactEntry[] (path, type, size)
+    Note right of API: assert response is array (empty OK if no .dingllm/)
+    Note right of API: assert each entry has path, type, size
+    Note right of API: assert type is one of: md, mmd, txt
+
+    HTTP-->>CP: ArtifactEntry[]
+    CP->>Dev: Render artifact list grouped by directory
+    Note right of CP: assert list item count matches response length
+    Note right of CP: assert entries grouped by parent directory
+    Note right of CP: assert each item is clickable

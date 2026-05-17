@@ -1,0 +1,33 @@
+---
+title: Test - View Mermaid Diagram Assertions
+---
+sequenceDiagram
+    actor Dev as Developer
+    participant CP as Content Panel
+    participant Store as Session Store
+    participant HTTP as Artifact Client
+    participant API as Artifact API (Server)
+    participant MMD as Mermaid Renderer
+
+    Dev->>CP: Clicks .mmd artifact (from list or chat ref)
+    CP->>Store: Read selectedArtifact
+    Store-->>CP: ArtifactRef (path, label)
+    Note right of Store: assert selectedArtifact is not null
+    Note right of Store: assert path ends with .mmd
+
+    CP->>HTTP: fetchArtifact(path)
+    HTTP->>API: GET /artifacts/{path}
+    API-->>HTTP: Raw mermaid content
+    Note right of API: assert response status 200
+    Note right of API: assert response body is non-empty string
+
+    HTTP-->>CP: string (mermaid)
+    CP->>MMD: Render mermaid content
+    MMD-->>CP: SVG output
+    Note right of MMD: assert output contains SVG element
+    Note right of MMD: assert no mermaid parse errors
+
+    CP->>Dev: Display rendered diagram
+    Note right of CP: assert content panel shows SVG, not raw mermaid text
+    Note right of CP: assert file path shown in content header
+    Note right of CP: assert diagram is pannable/zoomable
