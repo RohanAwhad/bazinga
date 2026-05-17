@@ -9,6 +9,9 @@ wheels/
 # Virtual environments
 .venv
 
+# Node.js
+node_modules/
+
 # Worker image build artifacts
 skills/
 opencode.worker.json
