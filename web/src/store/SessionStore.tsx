@@ -22,7 +22,7 @@ const initialState: SessionState = {
 function sessionReducer(state: SessionState, action: SessionAction): SessionState {
   switch (action.type) {
     case 'setSessionId':
-      return { ...state, sessionId: action.sessionId || null };
+      return { ...state, sessionId: action.sessionId };
     case 'addMessage':
       return { ...state, messages: [...state.messages, action.message] };
     case 'appendChunk': {

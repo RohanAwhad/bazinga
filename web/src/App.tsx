@@ -7,10 +7,12 @@ import type { ConnectionStatus } from './types';
 import './App.css';
 
 const PROJECT_PATH = import.meta.env.VITE_PROJECT_PATH || '/repo';
+const WS_CHAT_PATH = '/ws/chat';
+const WS_ACTION_CREATE_SESSION = 'create_session';
 
 function getWsUrl(): string {
   const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-  return `${protocol}//${window.location.host}/ws/chat`;
+  return `${protocol}//${window.location.host}${WS_CHAT_PATH}`;
 }
 
 export default function App() {
@@ -25,7 +27,7 @@ export default function App() {
     const unsubStatus = ws.onStatusChange((status) => {
       setConnectionStatus(status);
       if (status === 'disconnected') {
-        dispatch({ type: 'setSessionId', sessionId: '' });
+        dispatch({ type: 'setSessionId', sessionId: null });
       }
     });
 
@@ -69,7 +71,7 @@ export default function App() {
   useEffect(() => {
     if (connectionStatus === 'connected' && !sessionId) {
       wsRef.current.send({
-        action: 'create_session',
+        action: WS_ACTION_CREATE_SESSION,
         project_path: PROJECT_PATH,
       });
     }

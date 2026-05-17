@@ -3,6 +3,7 @@ import { useSessionState, useSessionDispatch } from '../store/SessionStore';
 import { listArtifacts, fetchArtifact } from '../clients/ArtifactClient';
 import MarkdownRenderer from './MarkdownRenderer';
 import MermaidRenderer from './MermaidRenderer';
+import { ARTIFACT_EXT_MMD, ARTIFACT_EXT_MD } from '../types';
 import type { ArtifactEntry } from '../types';
 import './ContentPanel.css';
 
@@ -36,9 +37,7 @@ export default function ContentPanel({ projectPath }: ContentPanelProps) {
     setLoading(true);
     setError(null);
     fetchArtifact(projectPath, selectedArtifact.path)
-      .then(text => {
-        setContent(text);
-      })
+      .then(setContent)
       .catch(err => {
         console.error('Failed to fetch artifact:', err);
         setContent('');
@@ -60,8 +59,8 @@ export default function ContentPanel({ projectPath }: ContentPanelProps) {
     return groups;
   }, [artifacts]);
 
-  const isMmd = selectedArtifact?.path.endsWith('.mmd');
-  const isMd = selectedArtifact?.path.endsWith('.md');
+  const isMmd = selectedArtifact?.path.endsWith(ARTIFACT_EXT_MMD);
+  const isMd = selectedArtifact?.path.endsWith(ARTIFACT_EXT_MD);
   const badgeClass = isMmd ? 'badge mmd' : 'badge md';
   const badgeText = isMmd ? 'MMD' : 'MD';
 

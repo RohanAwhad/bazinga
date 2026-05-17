@@ -1,6 +1,10 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
 import mermaid from 'mermaid';
 
+const MIN_SCALE = 0.1;
+const MAX_SCALE = 5;
+const ZOOM_STEP = 0.1;
+
 mermaid.initialize({
   startOnLoad: false,
   theme: 'dark',
@@ -12,11 +16,13 @@ interface MermaidRendererProps {
 }
 
 export default function MermaidRenderer({ content }: MermaidRendererProps) {
+  const wrapperRef = useRef<HTMLDivElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const [error, setError] = useState<string | null>(null);
   const [scale, setScale] = useState(1);
   const [translate, setTranslate] = useState({ x: 0, y: 0 });
   const [dragging, setDragging] = useState(false);
+  const draggingRef = useRef(false);
   const dragStart = useRef({ x: 0, y: 0 });
   const translateRef = useRef({ x: 0, y: 0 });
 
@@ -46,33 +52,43 @@ export default function MermaidRenderer({ content }: MermaidRendererProps) {
     return () => { cancelled = true; };
   }, [content]);
 
-  const handleWheel = useCallback((e: React.WheelEvent) => {
-    e.preventDefault();
-    const delta = e.deltaY > 0 ? -0.1 : 0.1;
-    setScale(s => Math.max(0.1, Math.min(5, s + delta)));
+  // Use native addEventListener with { passive: false } so preventDefault() works on wheel events.
+  // React's onWheel attaches a passive listener, making preventDefault() a no-op.
+  useEffect(() => {
+    const el = wrapperRef.current;
+    if (!el) return;
+    function onWheel(e: WheelEvent) {
+      e.preventDefault();
+      const delta = e.deltaY > 0 ? -ZOOM_STEP : ZOOM_STEP;
+      setScale(s => Math.max(MIN_SCALE, Math.min(MAX_SCALE, s + delta)));
+    }
+    el.addEventListener('wheel', onWheel, { passive: false });
+    return () => el.removeEventListener('wheel', onWheel);
   }, []);
 
   const handleMouseDown = useCallback((e: React.MouseEvent) => {
+    draggingRef.current = true;
     setDragging(true);
     dragStart.current = { x: e.clientX - translateRef.current.x, y: e.clientY - translateRef.current.y };
   }, []);
 
   const handleMouseMove = useCallback((e: React.MouseEvent) => {
-    if (!dragging) return;
+    if (!draggingRef.current) return;
     setTranslate({
       x: e.clientX - dragStart.current.x,
       y: e.clientY - dragStart.current.y,
     });
-  }, [dragging]);
+  }, []);
 
   const handleMouseUp = useCallback(() => {
+    draggingRef.current = false;
     setDragging(false);
   }, []);
 
   return (
     <div
+      ref={wrapperRef}
       className="mmd-preview"
-      onWheel={handleWheel}
       onMouseDown={handleMouseDown}
       onMouseMove={handleMouseMove}
       onMouseUp={handleMouseUp}

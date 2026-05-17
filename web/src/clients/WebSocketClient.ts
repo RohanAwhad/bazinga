@@ -93,7 +93,7 @@ export class WebSocketClient {
   private _scheduleReconnect() {
     if (this._reconnectTimer) return;
     const delay = Math.min(
-      WebSocketClient.BASE_RECONNECT_DELAY * Math.pow(2, this._reconnectAttempt),
+      WebSocketClient.BASE_RECONNECT_DELAY * 2 ** this._reconnectAttempt,
       WebSocketClient.MAX_RECONNECT_DELAY,
     );
     this._reconnectAttempt++;

@@ -1,3 +1,6 @@
+export const ARTIFACT_EXT_MMD = '.mmd';
+export const ARTIFACT_EXT_MD = '.md';
+
 export interface ArtifactRef {
   path: string;
   label: string;
