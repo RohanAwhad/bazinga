@@ -6,7 +6,12 @@ RUN apk add --no-cache \
     nodejs npm \
     git openssh-client \
     github-cli \
+    ripgrep \
     curl bash
+
+# OpenCode expects rg at /root/.cache/opencode/bin/rg
+RUN mkdir -p /root/.cache/opencode/bin && \
+    ln -s /usr/bin/rg /root/.cache/opencode/bin/rg
 
 # uv (Python package manager)
 RUN curl -LsSf https://astral.sh/uv/install.sh | sh
