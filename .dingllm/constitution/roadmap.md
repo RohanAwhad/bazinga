@@ -18,8 +18,8 @@ See `features.md` for the full product capability map.
 
 ## Now
 
-- [ ] Define the first web UI stack and app boundary
-- [ ] Build the web shell: sidebar chat, main panel, markdown rendering, Mermaid rendering
+- [x] Define the first web UI stack and app boundary (PRD 004)
+- [x] Build the web shell: sidebar chat, main panel, markdown rendering, Mermaid rendering (PRD 004)
 - [ ] Preserve the current CLI as the prototype/reference implementation until the web flow exists
 
 ## Next
