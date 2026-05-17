@@ -15,11 +15,18 @@ export interface ChatMessage {
 
 export type ConnectionStatus = 'connecting' | 'connected' | 'disconnected' | 'error';
 
-export interface WsSendPayload {
-  type: 'chat';
-  sessionId: string;
-  content: string;
+export interface WsSendChat {
+  project_path: string;
+  session_id: string;
+  message: string;
 }
+
+export interface WsSendCreateSession {
+  action: 'create_session';
+  project_path: string;
+}
+
+export type WsSendPayload = WsSendChat | WsSendCreateSession;
 
 export interface WsReceivePayload {
   type: 'chunk' | 'done' | 'error';

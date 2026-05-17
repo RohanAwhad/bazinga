@@ -5,11 +5,13 @@ import type { WebSocketClient } from '../clients/WebSocketClient';
 import './ChatPanel.css';
 
 function extractArtifactRefs(content: string): ArtifactRef[] {
-  const regex = /(\S+\.(?:md|mmd))/g;
+  // Match .dingllm/ prefixed paths or standalone filenames (word chars, hyphens, underscores)
+  // ending in .md or .mmd.  Avoids false-positives on URLs and deep node_modules paths.
+  const regex = /(?:\.dingllm\/[\w\-\/]+\.(?:md|mmd))|(?:(?:^|(?<=\s))[\w][\w\-]*\.(?:md|mmd)(?=\s|$))/gm;
   const refs: ArtifactRef[] = [];
   let match;
   while ((match = regex.exec(content)) !== null) {
-    const path = match[1];
+    const path = match[0];
     if (!refs.some(r => r.path === path)) {
       refs.push({ path, label: path });
     }
