@@ -1,0 +1,67 @@
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  height: 100vh;
+  background: #0d1117;
+  color: #c9d1d9;
+}
+
+#root {
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.topbar {
+  height: 48px;
+  background: #161b22;
+  border-bottom: 1px solid #30363d;
+  display: flex;
+  align-items: center;
+  padding: 0 16px;
+  gap: 12px;
+  flex-shrink: 0;
+}
+
+.topbar .logo {
+  font-weight: 700;
+  font-size: 16px;
+  color: #58a6ff;
+}
+
+.topbar .session {
+  font-size: 13px;
+  color: #8b949e;
+}
+
+.topbar .status {
+  font-size: 12px;
+  margin-left: auto;
+}
+
+.topbar .status.connected {
+  color: #3fb950;
+}
+
+.topbar .status.connecting {
+  color: #d29922;
+}
+
+.topbar .status.disconnected {
+  color: #8b949e;
+}
+
+.topbar .status.error {
+  color: #f85149;
+}
+
+.main {
+  flex: 1;
+  display: flex;
+  overflow: hidden;
+}

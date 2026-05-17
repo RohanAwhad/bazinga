@@ -13,7 +13,9 @@ from dataclasses import asdict
 from pathlib import Path
 
 from fastapi import FastAPI, HTTPException, Query, WebSocket, WebSocketDisconnect
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import PlainTextResponse
+from fastapi.staticfiles import StaticFiles
 from google.genai.types import Content, Part
 from loguru import logger
 
@@ -23,6 +25,14 @@ from state_store import StateStore
 from tool_executor import ToolExecutor
 
 app = FastAPI(title="Bazinga Local Server")
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 # --- Artifact API ---
 
@@ -224,3 +234,10 @@ async def websocket_chat(websocket: WebSocket) -> None:
             await websocket.close(code=1011)
         except Exception:
             pass
+
+
+# --- Static file serving for built Web UI ---
+
+web_dist = Path(__file__).parent / "web" / "dist"
+if web_dist.exists():
+    app.mount("/", StaticFiles(directory=str(web_dist), html=True), name="web-ui")
